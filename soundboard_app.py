@@ -25,6 +25,10 @@ class SoundboardApp:
         self.sound_map = {}
         self.saved_data = {}
         
+        # Variável de Estado: Volume Mestre (Padrão 1.0 = 100%)
+        # Guardamos isso para aplicar em novos sons que forem carregados futuramente.
+        self.master_volume = 1.0
+        
         # Variável para guardar o dispositivo de áudio escolhido
         self.current_device = tk.StringVar()
 
@@ -35,10 +39,10 @@ class SoundboardApp:
     def _setup_ui(self):
         # --- ÁREA DE CONFIGURAÇÃO DE ÁUDIO ---
         # Cientistas de dados precisam garantir que o 'Sink' (Destino) dos dados está correto.
-        audio_frame = tk.LabelFrame(self.root, text="Configuração de Saída de Áudio", padx=10, pady=10)
+        audio_frame = tk.LabelFrame(self.root, text="Configuração de Áudio (Saída & Volume)", padx=10, pady=10)
         audio_frame.pack(fill="x", padx=10, pady=5)
         
-        lbl_device = tk.Label(audio_frame, text="Onde o som deve sair?\n(Selecione 'CABLE Input' para usar no mic)")
+        lbl_device = tk.Label(audio_frame, text="Dispositivo de Saída:")
         lbl_device.pack(anchor="w")
 
         # Combobox para listar dispositivos
@@ -46,6 +50,14 @@ class SoundboardApp:
         self.device_combo['values'] = self.get_output_devices()
         self.device_combo.pack(pady=5)
         
+        # Controle de Volume (Slider)
+        # from_=0, to=100: Escala Humana
+        # command=self.update_volume: Função chamada a cada movimento do mouse
+        tk.Label(audio_frame, text="Volume Geral:").pack(anchor="w")
+        self.vol_slider = tk.Scale(audio_frame, from_=0, to=100, orient="horizontal", command=self.update_volume)
+        self.vol_slider.set(100) # Define valor inicial visual
+        self.vol_slider.pack(fill="x")
+
         # Botão para aplicar a mudança de dispositivo
         btn_apply = tk.Button(audio_frame, text="Mudar Dispositivo de Saída", command=self.change_audio_output, bg="#dddddd")
         btn_apply.pack(pady=5)
@@ -85,6 +97,23 @@ class SoundboardApp:
         except Exception as e:
             print(f"Erro ao listar dispositivos: {e}")
             return ["Padrão do Sistema"]
+
+    def update_volume(self, val):
+        """
+        Função chamada automaticamente pelo Slider (tk.Scale).
+        O Tkinter envia o valor atual como string (ex: "55").
+        """
+        # 1. Normalização de Dados (0-100 -> 0.0-1.0)
+        # Transformamos a escala humana em escala de máquina.
+        volume_float = int(val) / 100
+        
+        # 2. Atualiza o Estado Global
+        self.master_volume = volume_float
+        
+        # 3. Atualiza todos os sons já carregados na memória
+        # Iteramos sobre o dicionário de sons e aplicamos o novo volume imediatamente.
+        for sound in self.sound_map.values():
+            sound.set_volume(self.master_volume)
 
     def change_audio_output(self):
         """
@@ -188,6 +217,11 @@ class SoundboardApp:
             except: pass
         try:
             sound = pygame.mixer.Sound(file_path)
+            
+            # --- APLICAÇÃO DO VOLUME ---
+            # Assim que o som nasce (é carregado), ele já recebe o volume configurado.
+            sound.set_volume(self.master_volume)
+            
         except pygame.error as e:
             if not silent: messagebox.showerror("Erro", str(e))
             return
