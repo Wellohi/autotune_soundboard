@@ -44,3 +44,9 @@ No app de destino (Discord, etc), defina a "Entrada" (Microfone) para o cabo vir
 ```
 python soundboard_app.py
 ```
+
+
+
+## TO-DO
+
+*Fazer com que o app receba o audio do microfone para poder ser usado (como do discord) enquanto pode aplicar os audios salvos*
