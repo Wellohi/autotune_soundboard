@@ -47,6 +47,9 @@ python soundboard_app.py
 
 
 
-## TO-DO
+## Criar arquivo .exe
 
-*Fazer com que o app receba o audio do microfone para poder ser usado (como do discord) enquanto pode aplicar os audios salvos*
+```
+pyinstaller --noconsole --onefile --name="SoundboardPro" --hidden-import="pygame._sdl2" soundboard_app.py
+```
+
