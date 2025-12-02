@@ -10,17 +10,29 @@ from pygame import _sdl2 as sdl2_audio
 
 CONFIG_FILE = "soundboard_config.json"
 
+# --- CONSTANTES DE ÁUDIO (PRO CONFIG) ---
+# Definimos padrões de estúdio para garantir compatibilidade com VoiceMeeter/Discord
+AUDIO_FREQ = 48000      # 48kHz (Padrão DVD/Discord). Evita distorção de resampling.
+AUDIO_SIZE = -16        # 16-bit signed (Padrão CD).
+AUDIO_CHANNELS = 2      # Stereo.
+AUDIO_BUFFER = 2048     # Tamanho do Buffer. Aumente se ouvir "estalos" ou "picotes".
+
 class SoundboardApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Python Soundboard - Roteamento Avançado")
-        self.root.geometry("500x550") # Aumentei para caber o seletor
+        self.root.title("Python Soundboard - High Fidelity")
+        self.root.geometry("500x550") 
 
-        # Inicializa o mixer padrão primeiro
-        pygame.mixer.init()
-        
-        # Inicializa o módulo SDL2 para conseguirmos ler os nomes dos dispositivos
-        sdl2_audio.get_audio_device_names(False) 
+        # --- INICIALIZAÇÃO DE ÁUDIO CORRIGIDA ---
+        # Antes de iniciar, configuramos a "pré-inicialização" com os parâmetros de qualidade.
+        # Isso força o Pygame a não usar os padrões antigos de baixa qualidade.
+        try:
+            pygame.mixer.pre_init(frequency=AUDIO_FREQ, size=AUDIO_SIZE, channels=AUDIO_CHANNELS, buffer=AUDIO_BUFFER)
+            pygame.mixer.init()
+            # Inicializa o módulo SDL2 para conseguirmos ler os nomes dos dispositivos
+            sdl2_audio.get_audio_device_names(False) 
+        except Exception as e:
+            messagebox.showerror("Erro de Audio Driver", f"Não foi possível iniciar o driver de som:\n{e}")
 
         self.sound_map = {}
         self.saved_data = {}
@@ -82,9 +94,8 @@ class SoundboardApp:
         self.listbox.pack(pady=10, padx=10)
 
         info_text = (
-            "1. Selecione 'CABLE Input' acima.\n"
-            "2. No Windows, mantenha seu Fone como padrão.\n"
-            "3. No Discord, use 'CABLE Output' como microfone."
+            "Dica: Se o som estiver picotando, feche outros programas pesados.\n"
+            "Configuração atual: 48kHz, 16bit, Stereo."
         )
         lbl_info = tk.Label(self.root, text=info_text, fg="gray", justify="center")
         lbl_info.pack(side="bottom", pady=5)
@@ -130,20 +141,27 @@ class SoundboardApp:
             # Para mudar o dispositivo, precisamos fechar o mixer e reabrir
             pygame.mixer.quit()
             
-            # Re-inicializa com o parâmetro 'devicename'
-            # Isso força o Pygame a ignorar o padrão do Windows
-            pygame.mixer.init(devicename=device_name)
+            # Re-inicializa com o parâmetro 'devicename' E OS PARÂMETROS DE QUALIDADE
+            # Se não passarmos freq/size/buffer aqui de novo, ele pode resetar para qualidade baixa.
+            pygame.mixer.init(
+                frequency=AUDIO_FREQ,
+                size=AUDIO_SIZE,
+                channels=AUDIO_CHANNELS,
+                buffer=AUDIO_BUFFER,
+                devicename=device_name
+            )
             
             # ATENÇÃO: Ao fechar o mixer, todos os sons carregados na RAM são perdidos.
             # Precisamos recarregar tudo do disco.
             self.sound_map.clear() # Limpa referencias antigas
             self.load_config() # Recarrega do JSON
             
-            messagebox.showinfo("Sucesso", f"Áudio roteado para:\n{device_name}\nSons recarregados!")
+            messagebox.showinfo("Sucesso", f"Áudio roteado para:\n{device_name}\nSons recarregados em Alta Fidelidade (48kHz)!")
             
         except Exception as e:
             messagebox.showerror("Erro de Áudio", f"Falha ao mudar dispositivo: {e}\nVoltando ao padrão.")
-            pygame.mixer.init()
+            # Tenta recuperar com as configs padrão
+            pygame.mixer.init(frequency=AUDIO_FREQ, size=AUDIO_SIZE, buffer=AUDIO_BUFFER)
             self.load_config()
 
     # --- (RESTO DO CÓDIGO PERMANECE IGUAL) ---
