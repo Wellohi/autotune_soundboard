@@ -41,6 +41,8 @@ Após a compilação, o executável estará na pasta:
 
 ## 🎚️ FASE 2: Engenharia de Áudio (Infraestrutura)
 
+**TUTORIAL DE CONFIGURAÇÃO DO VOICEMEETER: https://www.youtube.com/watch?v=R_0wi3xNvVI&t=326s**
+
 Para que o som saia no seu microfone sem eco e com alta qualidade, precisamos preparar os "cabos virtuais".
 
 ### 1. Instalação de Drivers
